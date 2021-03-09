@@ -2,6 +2,7 @@ from datetime import datetime
 import requests
 import json
 import csv_tools as csv
+from time import time
 
 CSV_HOME = '/home/manage/splunk/etc/apps/lookup_editor/lookups/'
 CPE_TABLE = 'vul_cpe.csv'
@@ -12,13 +13,14 @@ cpe_db = {}
 
 def get_cves(cpe_part, cpe_vendor, cpe_product, cpe_version, fcves):
     start_index = 0
-    result_per_page = 16
+    result_per_page = 8
     total_items_read = 0
 
     while True:
         request_content = 'https://services.nvd.nist.gov/rest/json/cves/1.0?startIndex=%d&resultsPerPage=%s&cpeMatchString=cpe:2.3:%s:%s:%s:%s' % (start_index, result_per_page, cpe_part, cpe_vendor, cpe_product, cpe_version)
         print(request_content)
         print('...')
+        time_before = time()
         r = requests.get(request_content)
         try:
             j = json.loads(r.text)
@@ -26,7 +28,8 @@ def get_cves(cpe_part, cpe_vendor, cpe_product, cpe_version, fcves):
             print('*** ERROR:' + r.text)
             continue
         total_results = j['totalResults']
-        print('   --- Total results:' + str(total_results))
+        time_after = time()
+        print('   --- Total results:' + str(total_results) + ' Elapsed time:' + str(time_after - time_before))
         result = j['result']
         items = result['CVE_Items']
         items_read = len(items)
