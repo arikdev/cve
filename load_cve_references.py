@@ -38,25 +38,89 @@ def handle_commit(cve_id, url):
         res[cve_id]['commits'].append(commit_id)
         f.write('>>>>>COMMIT ' + commit_id + ' from url: ' + url + '\n')
 
+def handle_xen_patch(cve_id, patch_name):
+    XEN_PREFIX = 'http://xenbits.xen.org/xsa/'
+    xen_url = XEN_PREFIX + patch_name
+    try:
+        response = requests.get(xen_url)
+    except:
+        f.write('Eeception URL:' + url + '\n')
+        return
+    str_patch = str(response.content, 'utf-8')
+    lines = str_patch.split('\n')
+    files = []
+    for line in lines:
+        if '--- a/' not in line:
+            continue
+        tokens = line.split('/')
+        files.append('/'.join(tokens[1:]))
+
+    handle_files(cve_id, files)
+
+
+def handle_xen(cve_id, str_patch):
+    lines = str_patch.split('\n')
+    for line in lines:
+        if 'href' in line and 'patch' in line:
+            ind = line.find('href=')
+            if ind == -1:
+                continue
+            patch_name = line[ind:].split('"')[1]
+            if 'patch' not in patch_name:
+                continue
+            handle_xen_patch(cve_id, patch_name)
+
+def handle_bugzilla_readhat(cve_id, str_patch):
+    lines = str_patch.split('\n')
+    patch_id = -1
+    for i,line in enumerate(lines):
+        if 'Upstream patch:' in line:
+            patch_id = i
+            break
+    if patch_id == -1:
+        return
+    for i in range(patch_id + 1, len(lines)):
+        if 'https:' in lines[i]:
+            patch_id = i
+            break
+    else:
+        return
+
+    url = lines[patch_id].split('"')[1]
+    try:
+        response = requests.get(url)
+    except:
+        f.write('Eeception URL:' + url + '\n')
+        return
+    handle_patch(cve_id, url, str(response.content, 'utf-8'))
+
 
 def handle_patch(cve_id, url, str_patch):
-    global files_found
-    if url is not None:
-        handle_commit(cve_id, url)
-        files = re.findall(r'(\/[\/\w]*?\.[ch]+\b)', str_patch)
-        handle_files(cve_id, files)
+    if url is None:
+        return
+
+    if 'xenbits' in url:
+        handle_xen(cve_id, str_patch)
+        return
+    if 'bugzilla.redhat' in url: 
+        handle_bugzilla_readhat(cve_id, str_patch)
+        return
+
+    handle_commit(cve_id, url)
+    files = re.findall(r'(\/[\/\w]*?\.[ch]+\b)', str_patch)
+    handle_files(cve_id, files)
 
 def handle_ref(cve_id, r):
     global counter
-    if 'tags' not in r:
-        return
-    tags = r['tags']
-    if 'Patch' not in tags:
-       return
+    #if 'tags' not in r:
+        #return
+    #tags = r['tags']
+    #if 'Patch' not in tags:
+    #   return
     if 'url' not in r:
        return
     url = r['url']
-    if 'git' not in url and 'lkml.org' not in url:
+    if 'git' not in url and 'lkml.org' not in url and 'xenbits' not in url and 'bugzilla.redhat' not in url:
         return
     counter = counter + 1
     try:
@@ -82,7 +146,6 @@ def handle_description(cve_id, cve):
 def handle_cve(item):
     cve = item['cve']
     cve_meta_data = cve['CVE_data_meta']
-    print('----- Handle cve:' +  cve_meta_data['ID'])
     #handle_description(cve_meta_data['ID'], cve)
     if 'references' not in cve:
         return
