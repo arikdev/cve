@@ -19,6 +19,8 @@ class CSV_FILE:
                 if first:  # If the header of the csv
                     first = False
                     continue
+                if line[0] == '#':
+                    continue
                 line = line[:-1]
                 tokens = line.split(',')
                 self.implementation(tokens)
