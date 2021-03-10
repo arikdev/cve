@@ -4,7 +4,7 @@ import json
 import sys
 import re
 
-TEST_CVE = 'CVE-2020-26088'
+TEST_CVE = 'CVE-2019-18786'
 
 res = {}
 files_found = 0
@@ -48,7 +48,7 @@ def find_all(str, sub):
         yield start
         start += len(sub)
 
-def get_patch_files(str_patch):
+def get_patch_files(cve_id, str_patch):
     files = []
     for diff_i in find_all(str_patch, '--- a/'):
         str = str_patch[diff_i:]
@@ -58,15 +58,14 @@ def get_patch_files(str_patch):
             files.append(str[start_i:start_i + end_i])
         else:
             diff_tokens = str_patch[diff_i:].split(None, 2)
-            files.append(diff_tokens[1][1:])
-    if not files:
-        files = re.findall(r'(\/[\/\w]*?\.[ch]+:)', str_patch)
-        if not files:
-            return []
-        for i in range(len(files)):
-            files[i] = files[i][:-1]
-        files = set(files)
-        print(files)
+            comp_file = diff_tokens[1][1:]
+            if '<' in comp_file:
+                comp_file = comp_file.split('<')[0]
+            files.append(comp_file)
+    lines = str_patch.split('\n')
+    for line in lines:
+        if 'data-path=' in line:
+            files.append(line.split('"')[1])
     return files
 
 def handle_xen_patch(cve_id, patch_name):
@@ -77,7 +76,7 @@ def handle_xen_patch(cve_id, patch_name):
     except:
         f.write('Eeception URL:' + url + '\n')
         return
-    files = get_patch_files(str(response.content, 'utf-8'))
+    files = get_patch_files(cve_id, str(response.content, 'utf-8'))
 
     handle_files(cve_id, files)
 
@@ -131,14 +130,14 @@ def handle_patch(cve_id, url, str_patch):
         return
 
     handle_commit(cve_id, url)
-    files = get_patch_files(str_patch)
+    files = get_patch_files(cve_id, str_patch)
     if cve_id == TEST_CVE:
         print('PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP ' + TEST_CVE  + ' patch '  + url)
         print(files)
     handle_files(cve_id, files)
 
 def is_relevant_url(url):
-    relevant_strings = ['git', 'kernel.org', 'lkml.org', 'xenbits', 'bugzilla.redhat' ]
+    relevant_strings = ['git', 'kernel.org', 'lkml.org', 'xenbits', 'bugzilla.redhat', 'linuxtv.org' ]
 
     for str in relevant_strings:
         if str in url:
@@ -189,6 +188,8 @@ def handle_cve(item):
     if 'reference_data' not in references:
         return
     ref_data = references['reference_data']
+    #if cve_meta_data['ID'] != TEST_CVE:
+    #    return
     for r in ref_data:
       handle_ref(cve_meta_data['ID'], r)
 
