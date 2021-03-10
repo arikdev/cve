@@ -8,7 +8,7 @@ if len(sys.argv) < 3:
 vulgate = {}
 vulgate['reported'] = []
 vulgate['ignored'] = []
-vulgate['falsePositive'] = []
+vulgate['falsePositive'] = {}
 
 with open(sys.argv[2], 'r') as vulgate_file:
     j = json.load(vulgate_file)
@@ -30,7 +30,7 @@ for vul in vuls:
     for i in vul['autodetectedFalsePositiveCves']:
         cves = vul['cves']
         cve_id = i['cveId']
-        vulgate['falsePositive'].append(cve_id)
+        vulgate['falsePositive'][cve_id] =  i['justificationForFalsePositive']
 
 ok = 0
 ignore = 0
@@ -59,7 +59,7 @@ with open(sys.argv[1], 'r') as incidents_file:
             ignore = 1
             continue
         if cve in vulgate['falsePositive']:
-            print(cve + ' FLASE POSITIVE')
+            print(cve + ' FLASE POSITIVE ' +  vulgate['falsePositive'][cve]  )
             falsePositive += 1
             continue
 
