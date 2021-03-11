@@ -4,7 +4,7 @@ import json
 import sys
 import re
 
-TEST_CVE = 'CVE-2019-18786'
+TEST_CVE = 'CVE-2019-15291'
 
 res = {}
 files_found = 0
@@ -72,6 +72,8 @@ def handle_xen_patch(cve_id, patch_name):
     XEN_PREFIX = 'http://xenbits.xen.org/xsa/'
     xen_url = XEN_PREFIX + patch_name
     try:
+        print('requesting xen....')
+        print(xen_url)
         response = requests.get(xen_url)
     except:
         f.write('Eeception URL:' + url + '\n')
@@ -111,6 +113,8 @@ def handle_bugzilla_readhat(cve_id, str_patch):
 
     url = lines[patch_id].split('"')[1]
     try:
+        print('requesting bugzila....')
+        print(xen_url)
         response = requests.get(url)
     except:
         f.write('Eeception URL:' + url + '\n')
@@ -133,11 +137,13 @@ def handle_patch(cve_id, url, str_patch):
     files = get_patch_files(cve_id, str_patch)
     if cve_id == TEST_CVE:
         print('PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP ' + TEST_CVE  + ' patch '  + url)
+        print(str_patch)
         print(files)
     handle_files(cve_id, files)
 
 def is_relevant_url(url):
-    relevant_strings = ['git', 'kernel.org', 'lkml.org', 'xenbits', 'bugzilla.redhat', 'linuxtv.org' ]
+    #relevant_strings = ['git', 'kernel.org', 'lkml.org', 'xenbits', 'bugzilla.redhat', 'linuxtv.org', 'spinics.net']
+    relevant_strings = ['git', 'kernel.org', 'lkml.org', 'xenbits', 'bugzilla.redhat', 'linuxtv.org']
 
     for str in relevant_strings:
         if str in url:
@@ -155,10 +161,12 @@ def handle_ref(cve_id, r):
        return
     url = r['url']
     if cve_id == TEST_CVE:
-        print('DDDDDDDDDDDDDDDDDDDDD ' + TEST_CVE  + ' '  + url)
+        print('DDDDDDDDDDDDDDDDDDDDD requesting ' + TEST_CVE  + ' '  + url)
     if not is_relevant_url(url):
         return
     try:
+      print('requesting....')
+      print(url)
       response = requests.get(url)
     except:
       f.write('Eeception URL:' + url + '\n')
@@ -167,29 +175,42 @@ def handle_ref(cve_id, r):
 
 def handle_description(cve_id, cve):
     if 'description' not in cve:
+        if cve_meta_data['ID'] == TEST_CVE:
+            print('No description')
         return
     desc = cve['description']
+    if cve_id == TEST_CVE:
+        print(desc)
     if 'description_data' not in desc:
         return;
     desc_data = desc['description_data']
-    for i in desc_data:
-        if 'value' not in i:
+    files = []
+    for data in desc_data:
+        if 'value' not in data:
             continue
-        handle_patch(cve_id, None, i['value'])
+        if cve_id == TEST_CVE:
+            print(data['value'])
+        for word in data['value'].split():
+            if word.endswith('.c'):
+                files.append(word)
+
+    if files:
+       handle_files(cve_id, files)
 
 
 def handle_cve(item):
     cve = item['cve']
     cve_meta_data = cve['CVE_data_meta']
-    #handle_description(cve_meta_data['ID'], cve)
-    if 'references' not in cve:
-        return
+    print(cve_meta_data['ID'])
+    handle_description(cve_meta_data['ID'], cve)
+    #if 'references' not in cve:
+        #return
     references = cve['references']
     if 'reference_data' not in references:
         return
     ref_data = references['reference_data']
     #if cve_meta_data['ID'] != TEST_CVE:
-    #    return
+        #return
     for r in ref_data:
       handle_ref(cve_meta_data['ID'], r)
 
