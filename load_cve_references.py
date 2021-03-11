@@ -4,7 +4,7 @@ import json
 import sys
 import re
 
-TEST_CVE = 'CVE-2019-15291'
+TEST_CVE = 'CVE-2019-19227'
 
 res = {}
 files_found = 0
@@ -137,7 +137,6 @@ def handle_patch(cve_id, url, str_patch):
     files = get_patch_files(cve_id, str_patch)
     if cve_id == TEST_CVE:
         print('PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP ' + TEST_CVE  + ' patch '  + url)
-        print(str_patch)
         print(files)
     handle_files(cve_id, files)
 
@@ -152,11 +151,11 @@ def is_relevant_url(url):
 
 
 def handle_ref(cve_id, r):
-    #if 'tags' not in r:
-        #return
-    #tags = r['tags']
+    if 'tags' not in r:
+        return
+    tags = r['tags']
     #if 'Patch' not in tags:
-    #   return
+       #return
     if 'url' not in r:
        return
     url = r['url']
@@ -179,8 +178,6 @@ def handle_description(cve_id, cve):
             print('No description')
         return
     desc = cve['description']
-    if cve_id == TEST_CVE:
-        print(desc)
     if 'description_data' not in desc:
         return;
     desc_data = desc['description_data']
@@ -203,8 +200,8 @@ def handle_cve(item):
     cve_meta_data = cve['CVE_data_meta']
     print(cve_meta_data['ID'])
     handle_description(cve_meta_data['ID'], cve)
-    #if 'references' not in cve:
-        #return
+    if 'references' not in cve:
+        return
     references = cve['references']
     if 'reference_data' not in references:
         return
@@ -215,6 +212,23 @@ def handle_cve(item):
       handle_ref(cve_meta_data['ID'], r)
 
 f = open("cve_reference_log.txt", "w")
+
+is_reset = False
+for arg in sys.argv:
+    if arg == '-r':
+        is_reset = True
+
+if not is_reset:
+    with open("cves_refs.json", "r")as fp:
+        for line in fp:
+            j = json.loads(line)
+            print(j)
+            cve_id = j['cve_id']
+            info = {}
+            info['files'] = j['files']
+            info['commits'] = j['commits']
+            res[cve_id] = info
+
 fcves_refs = open("cves_refs.json", "w")
 cves = []
 with open('cves.json', 'r') as json_file:
