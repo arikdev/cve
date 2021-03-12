@@ -48,14 +48,16 @@ def version_cmp(ver1, ver2):
 def get_cvss(cve_item):
     cvss = '0'
     impact = cve_item['impact']
-    if 'baseMetricV3' in impact:
-        if 'cvssV3' in impact['baseMetricV3']:
-            if 'baseScore' in impact['baseMetricV3']['cvssV3']:
-                return  impact['baseMetricV3']['cvssV3']['baseScore']
-    if 'baseMetricV2' in impact:
-        if 'cvssV2' in impact['baseMetricV2']:
-            if 'baseScore' in impact['baseMetricV2']['cvssV2']:
-                return  impact['baseMetricV2']['cvssV2']['baseScore']
+    try:
+        if 'baseScore' in impact['baseMetricV3']['cvssV3']:
+            return  impact['baseMetricV3']['cvssV3']['baseScore']
+    except KeyError:
+        pass
+    try:
+        if 'baseScore' in impact['baseMetricV2']['cvssV2']:
+            return  impact['baseMetricV2']['cvssV2']['baseScore']
+    except KeyError:
+        pass
 
     return cvss
 
@@ -196,13 +198,12 @@ class Cpe_compiled_files(csv.CSV_FILE):
                 break;
         if not found:
             new_entry = {}
-            new_entry['files'] = []
+            new_entry['files'] = set()
             new_entry['product_id'] = product_id
             cpe_compiled_files_db[cpe_id].append(new_entry)
             cpe_entry = new_entry
 
-        if source_file not in cpe_entry['files']:
-            cpe_entry['files'].append(source_file)
+        cpe_entry['files'].add(source_file)
 
 class Cve_ignore_file(csv.CSV_FILE):
     def implementation(self, tokens):
@@ -234,13 +235,12 @@ def load_ref():
             cve_id = j['cve_id']
             if cve_id not in ref_db:
                 ref_db[cve_id] = {}
-                ref_db[cve_id]['files'] = []
+                ref_db[cve_id]['files'] = set()
                 ref_db[cve_id]['commits'] = []
             files = ref_db[cve_id]['files']
             ref_files = j['files']
             for ref_file in ref_files:
-                if ref_file not in files:
-                    files.append(ref_file)
+                files.add(ref_file)
             commits = ref_db[cve_id]['commits']
             ref_commits = j['commits']
             for ref_commit in ref_commits:
@@ -433,15 +433,18 @@ def is_reference_relevant(cve_id, cpe, version, product_id):
         return False
     found = False
     for cpe_entry in cpe_compiled_files_db[cpe]:
-        if 'product_id' in cpe_entry and cpe_entry['product_id'] == product_id: 
-            found = True
-            break
+        try:
+            if cpe_entry['product_id'] == product_id: 
+                found = True
+                break
+        except KeyError:
+            pass
     if not found:
         return False
 
     for c in ref_db[cve_id]['commits']:
         if c in commits_db:
-            print('CVE ' + cve_id + ' has filter out commit + ' + c)
+            #print('CVE ' + cve_id + ' has filter out commit + ' + c)
             return False
 
 
