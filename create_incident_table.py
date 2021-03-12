@@ -48,13 +48,11 @@ def version_cmp(ver1, ver2):
 def get_cvss(cve_item):
     impact = cve_item['impact']
     try:
-        if 'baseScore' in impact['baseMetricV3']['cvssV3']:
-            return  impact['baseMetricV3']['cvssV3']['baseScore']
+        return  impact['baseMetricV3']['cvssV3']['baseScore']
     except KeyError:
         pass
     try:
-        if 'baseScore' in impact['baseMetricV2']['cvssV2']:
-            return impact['baseMetricV2']['cvssV2']['baseScore']
+        return impact['baseMetricV2']['cvssV2']['baseScore']
     except KeyError:
         pass
 
@@ -422,25 +420,18 @@ def is_reference_relevant(cve_id, cpe, version, product_id):
     #print('=============================================================================')
     #print(ref_db[cve_id]['commits'])
 
-    found = False
     for file in ref_db[cve_id]['files']:
         if '.c' in file:
-            found = True
             break
-    if not found:
+    else:
         return True
 
     if cpe not in cpe_compiled_files_db:
         return False
-    found = False
     for cpe_entry in cpe_compiled_files_db[cpe]:
-        try:
-            if cpe_entry['product_id'] == product_id: 
-                found = True
-                break
-        except KeyError:
-            pass
-    if not found:
+        if cpe_entry.get('product_id') == product_id: 
+            break
+    else:
         return False
 
     for c in ref_db[cve_id]['commits']:
