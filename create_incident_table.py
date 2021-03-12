@@ -46,7 +46,6 @@ def version_cmp(ver1, ver2):
     return 0
 
 def get_cvss(cve_item):
-    cvss = '0'
     impact = cve_item['impact']
     try:
         if 'baseScore' in impact['baseMetricV3']['cvssV3']:
@@ -55,11 +54,11 @@ def get_cvss(cve_item):
         pass
     try:
         if 'baseScore' in impact['baseMetricV2']['cvssV2']:
-            return  impact['baseMetricV2']['cvssV2']['baseScore']
+            return impact['baseMetricV2']['cvssV2']['baseScore']
     except KeyError:
         pass
 
-    return cvss
+    return '0'
 
 def handle_cve(cve_item, part, vendor, product, version, cves):
     cve = cve_item['cve']
@@ -233,11 +232,13 @@ def load_ref():
             if 'cve_id' not in j:
                 return
             cve_id = j['cve_id']
-            if cve_id not in ref_db:
+            try :
+                files = ref_db[cve_id]['files']
+            except KeyError:
                 ref_db[cve_id] = {}
                 ref_db[cve_id]['files'] = set()
                 ref_db[cve_id]['commits'] = []
-            files = ref_db[cve_id]['files']
+                files = ref_db[cve_id]['files']
             ref_files = j['files']
             for ref_file in ref_files:
                 files.add(ref_file)
