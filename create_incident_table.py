@@ -232,7 +232,7 @@ def load_ref():
             cve_id = j['cve_id']
             files = ref_db.get(cve_id)
             if files is None:
-                cve_refs = ref_db[cve_id] = {'files':set(),'commits':[]}
+                cve_refs = ref_db[cve_id] = {'files':set(),'commits':set()}
                 files = cve_refs['files']
             ref_files = j['files']
             for ref_file in ref_files:
@@ -240,8 +240,7 @@ def load_ref():
             commits = ref_db[cve_id]['commits']
             ref_commits = j['commits']
             for ref_commit in ref_commits:
-                if ref_commit not in commits:
-                    commits.append(ref_commit)
+                commits.add(ref_commit)
 
 
 def load_commits():
