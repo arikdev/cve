@@ -156,25 +156,13 @@ class Product_cpe_file(csv.CSV_FILE):
         if product_id not in product_db:
            print('ERROR: product :' + product_id)
            return
-        product_cpes = product_db[product_id]['cpes']
-        if cpe_id not in product_cpes:
-            product_cpes[cpe_id] = {}
-            cpe_entry = product_cpes[cpe_id];
-            cpe_entry['version'] = version
-            cpe_entry['cves'] = []
+        product_db[product_id]['cpes'][cpe_id] = {'version':version, 'cves':[]}
 
 class Cpe_file(csv.CSV_FILE):
     def implementation(self, tokens):
         global cpe_db
         cpe_id = tokens[0]
-        if cpe_id not in cpe_db:
-           cpe_db[cpe_id] = []
-        cpe_entry = cpe_db[cpe_id]
-        cpe_info = {}
-        cpe_info['part'] = tokens[1]
-        cpe_info['vendor']= tokens[2]
-        cpe_info['product'] = tokens[3]
-        cpe_entry.append(cpe_info)
+        cpe_db.setdefault(cpe_id, []).append({'part': tokens[1], 'vendor': tokens[2], 'product': tokens[3]})
 
 class Cpe_compiled_files(csv.CSV_FILE):
     def implementation(self, tokens):
