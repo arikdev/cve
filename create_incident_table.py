@@ -17,11 +17,6 @@ INCIDENT_TABLE = 'vul_incidents.csv'
 CPE_COMPILED_FILES_TABLE = 'vul_cpe_compiled_files.csv'
 CVE_COMMITS_FILE = 'vul_cve_commits.txt'
 
-HOST = "localhost"
-PORT = 8089
-USERNAME = "admin"
-PASSWORD = "faurecia#security"
-
 debug = False
 get_time = False
 
@@ -84,10 +79,7 @@ def handle_cve(cve_item, part, vendor, product, version, cves):
                 continue
             cur_version = tokens[5]
             if cur_version.find(version) != -1:
-                cve_info = {}
-                cve_info['cve_id'] = cve_id
-                cve_info['cvss'] = cvss
-                cves.append(cve_info)
+                cves.append({'cve_id': cve_id, 'cvss': cvss})
                 found = True
                 break
             if cur_version == '-':
@@ -110,10 +102,7 @@ def handle_cve(cve_item, part, vendor, product, version, cves):
                         continue;
                 except ValueError:
                     print('ERROR in versionStartIncluding')
-                cve_info = {}
-                cve_info['cve_id'] = cve_id
-                cve_info['cvss'] = cvss
-                cves.append(cve_info)
+                cves.append({'cve_id': cve_id, 'cvss': cvss})
                 found = True
                 break
 
@@ -123,14 +112,6 @@ def handle_cve(cve_item, part, vendor, product, version, cves):
 def get_cves(cves, part, vendor, product, version):
     for l in cves_db:
         handle_cve(l, part, vendor, product, version, cves)
-    #search = f'search index="' + index + '" | search configurations.nodes{}.cpe_match{}.cpe23Uri="cpe:2.3:%s:%s:%s:*"' % (part, vendor, product)
-    #search_splunk(service, search, 4096, handle_cve, part, vendor, product, version, cves)
-
-def get_cpe_variants(cpe):
-    if cpe not in cpe_db:
-        return None
-
-    return cpe_db[cpe]
 
 # Each product should contain the following:
 # List of dictionaries that contains:
@@ -278,15 +259,13 @@ def dump_db():
         for cpe_id, cpe_info in product_info['cpes'].items():
             print(cpe_id)
             version = cpe_info['version']
-            cves = cpe_info['cves']
-            cpe_variants = get_cpe_variants(cpe_id)
-            for variant in cpe_variants:
+            for variant in cpe_db.setdefault(cpe_id, None):
                 print('++++')
                 print(variant['part'])
                 print(variant['vendor'])
                 print(variant['product'])
                 print(version)
-                for cve in cves:
+                for cve in cpe_info['cves']:
                     print(cve['cve_id'])
 
 if get_time:
@@ -304,8 +283,7 @@ def __handle_product_init_db(product_entry):
     for cpe_id, cpe_info in product_info['cpes'].items():
         version = cpe_info['version']
         cves = cpe_info['cves']
-        cpe_variants = get_cpe_variants(cpe_id)
-        for variant in cpe_variants:
+        for variant in cpe_db.setdefault(cpe_id, None):
             get_cves(cves, variant['part'], variant['vendor'], variant['product'], version)
 
     return ""
@@ -334,8 +312,7 @@ def __handle_product(product_entry):
         version = cpe_info['version']
         if debug:
             print('>>>>> Processing ' + str(product_id) + ' ' + str(cpe) + ' ' + str(version))
-        cves = cpe_info['cves']
-        for cve in cves:
+        for cve in cpe_info['cves']:
             cve_id = cve['cve_id']
             if cve_id in ignore_list:
                 continue
@@ -355,16 +332,11 @@ def __handle_product(product_entry):
 
 def get_incident(incidents_db, product_id, cve, cpe, version):
     for incident in incidents_db:
-        if 'CVE' not in incident:
-            continue
-        if 'CPE' not in incident:
-            continue
-        if 'Version' not in incident:
-            continue
-        if 'Product_id' not in incident:
-            continue
-        if cve == incident['CVE'] and cpe == incident['CPE'] and version == incident['Version'] and product_id == incident['Product_id']:
-            return incident
+        try:
+            if cve == incident['CVE'] and cpe == incident['CPE'] and version == incident['Version'] and product_id == incident['Product_id']:
+                return incident
+        except KeyError:
+            pass
 
     return None
 
@@ -397,9 +369,6 @@ def is_reference_relevant(cve_id, cpe, version, product_id):
     if cve_id not in ref_db:
         return True
 
-    #print('=============================================================================')
-    #print(ref_db[cve_id]['commits'])
-
     for file in ref_db[cve_id]['files']:
         if '.c' in file:
             break
@@ -416,9 +385,7 @@ def is_reference_relevant(cve_id, cpe, version, product_id):
 
     for c in ref_db[cve_id]['commits']:
         if c in commits_db:
-            #print('CVE ' + cve_id + ' has filter out commit + ' + c)
             return False
-
 
     for pfile in cpe_entry['files']:
         for rfile in ref_db[cve_id]['files']:
@@ -450,10 +417,6 @@ cpe_compiled_files_db = {}
 commits_db = {}
 
 init_db()
-
-print('------------------------------------------- commits:')
-#print(ref_db)
-#print(commits_db)
 
 if debug:
     dump_db()
