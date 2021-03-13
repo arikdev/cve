@@ -96,22 +96,18 @@ def handle_cve(cve_item, part, vendor, product, version, cves):
                 startIncluding = None
                 endIncluding = None
                 try:
-                    if 'versionStartIncluding' in match:
-                        startIncluding = match['versionStartIncluding']
-                        if version_cmp(version, startIncluding) == -1:
-                            continue;
-                    if 'versionEndIncluding' in match:
-                        endIncluding = match['versionEndIncluding']
-                        if version_cmp(version, endIncluding) == 1:
-                            continue;
-                    if 'versionStartExcluding' in match:
-                        startExcluding = match['versionStartExcluding']
-                        if version_cmp(version, startExcluding) != 1:
-                            continue;
-                    if 'versionEndExcluding' in match:
-                        endExcluding = match['versionEndExcluding']
-                        if version_cmp(version, endExcluding) != -1:
-                            continue;
+                    startIncluding = match.get('versionStartIncluding')
+                    if startIncluding is not None and version_cmp(version, startIncluding) == -1:
+                        continue;
+                    endIncluding = match.get('versionEndIncluding')
+                    if endIncluding is not None and version_cmp(version, endIncluding) == 1:
+                        continue;
+                    startExcluding = match.get('versionStartExcluding')
+                    if startExcluding is not None and version_cmp(version, startExcluding) != 1:
+                        continue;
+                    endExcluding = match.get('versionEndExcluding')
+                    if endExcluding is not None and version_cmp(version, endExcluding) != -1:
+                        continue;
                 except ValueError:
                     print('ERROR in versionStartIncluding')
                 cve_info = {}
