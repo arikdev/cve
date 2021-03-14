@@ -180,19 +180,11 @@ def load_ref():
     with open('cves_refs.json', 'r') as json_file:
         for line in json_file:
             j = json.loads(line)
-            if 'cve_id' not in j:
-                return
-            cve_id = j['cve_id']
-            files = ref_db.get(cve_id)
-            if files is None:
-                cve_refs = ref_db[cve_id] = {'files':set(),'commits':set()}
-                files = cve_refs['files']
-            ref_files = j['files']
-            for ref_file in ref_files:
+            files = ref_db.setdefault(j['cve_id'], {'files':set(),'commits':set()})['files']
+            commits = ref_db.setdefault(j['cve_id'], {'files':set(),'commits':set()})['commits']
+            for ref_file in j['files']:
                 files.add(ref_file)
-            commits = ref_db[cve_id]['commits']
-            ref_commits = j['commits']
-            for ref_commit in ref_commits:
+            for ref_commit in j['commits']:
                 commits.add(ref_commit)
 
 
