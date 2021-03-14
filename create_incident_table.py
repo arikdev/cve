@@ -41,22 +41,19 @@ def version_cmp(ver1, ver2):
     return 0
 
 def get_cvss(cve_item):
-    impact = cve_item['impact']
     try:
-        return impact['baseMetricV3']['cvssV3']['baseScore']
+        return  cve_item['impact']['baseMetricV3']['cvssV3']['baseScore']
     except KeyError:
         pass
     try:
-        return impact['baseMetricV2']['cvssV2']['baseScore']
+        return  cve_item['impact']['baseMetricV2']['cvssV2']['baseScore']
     except KeyError:
         pass
 
     return '0'
 
 def handle_cve(cve_item, part, vendor, product, version, cves):
-    cve = cve_item['cve']
-    meta_data = cve['CVE_data_meta']
-    cve_id = meta_data['ID']
+    cve_id = cve_item['cve']['CVE_data_meta']['ID']
     conf = cve_item['configurations']
     nodes = conf['nodes']
     cvss = str(get_cvss(cve_item))
@@ -111,7 +108,7 @@ def handle_cve(cve_item, part, vendor, product, version, cves):
 # Get CVES that match CPEs
 def get_cves(cves, part, vendor, product, version):
     for l in cves_db:
-        handle_cve(l, part, vendor, product, version, cves)
+        handle_cve(cve_item=l, part=part, vendor=vendor, product=product, version=version, cves=cves)
 
 # Each product should contain the following:
 # List of dictionaries that contains:
@@ -122,10 +119,7 @@ def get_cves(cves, part, vendor, product, version):
 class Product_file(csv.CSV_FILE):
     def implementation(self, tokens):
         global product_db
-        product_id = tokens[0]
-        product_db[product_id] = {}
-        product_db[product_id]['cpes'] = {}
-        product_db[product_id]['customer'] = tokens[2]
+        product_db[tokens[0]] = {'cpes':{}, 'customer':tokens[2]}
 
 class Product_cpe_file(csv.CSV_FILE):
     def implementation(self, tokens):
@@ -151,19 +145,13 @@ class Cpe_compiled_files(csv.CSV_FILE):
         cpe_id = tokens[0]
         product_id = tokens[1]
         source_file = tokens[2]
-        if cpe_id not in cpe_compiled_files_db:
-           cpe_compiled_files_db[cpe_id] = []
-        found = False
+        cpe_compiled_files_db.setdefault(cpe_id, [])
         for cpe_entry in cpe_compiled_files_db[cpe_id]:
             if 'product_id' in cpe_entry and cpe_entry['product_id'] == product_id: 
-                found = True
-                break;
-        if not found:
-            new_entry = {}
-            new_entry['files'] = set()
-            new_entry['product_id'] = product_id
-            cpe_compiled_files_db[cpe_id].append(new_entry)
-            cpe_entry = new_entry
+                break
+        else:
+            cpe_entry = {'files':set(), 'product_id':product_id}
+            cpe_compiled_files_db[cpe_id].append(cpe_entry)
 
         cpe_entry['files'].add(source_file)
 
