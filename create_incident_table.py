@@ -8,7 +8,8 @@ from general_tools import timer
 import concurrent.futures
 from time import time
 
-CSV_HOME = '/home/manage/splunk/etc/apps/lookup_editor/lookups/'
+REF_HOME = '/home/manage/cve/reference/'
+OUTPUT_HOME = '/home/manage/cve/output/'
 CPE_TABLE = 'vul_cpe.csv'
 PRODUCT_TABLE = 'vul_product_table.csv'
 PRODUCT_CPE_TABLE = 'vul_product_cpe.csv'
@@ -189,7 +190,7 @@ def load_ref():
 
 
 def load_commits():
-    with open(CSV_HOME + CVE_COMMITS_FILE, 'r') as fp:
+    with open(REF_HOME + CVE_COMMITS_FILE, 'r') as fp:
         while True:
             try:
                 commit_id = fp.readline()[:-1]
@@ -202,22 +203,22 @@ def load_commits():
 
 
 def init_db():
-    product_file = Product_file(CSV_HOME + PRODUCT_TABLE)
+    product_file = Product_file(REF_HOME + PRODUCT_TABLE)
     product_file.process()
 
-    product_cpe_file = Product_cpe_file(CSV_HOME + PRODUCT_CPE_TABLE)
+    product_cpe_file = Product_cpe_file(REF_HOME + PRODUCT_CPE_TABLE)
     product_cpe_file.process()
 
-    cpe_file = Cpe_file(CSV_HOME + CPE_TABLE)
+    cpe_file = Cpe_file(REF_HOME + CPE_TABLE)
     cpe_file.process()
 
-    incident_seq_file = Incident_seq_file(CSV_HOME + INCIDENT_TABLE)
+    incident_seq_file = Incident_seq_file(REF_HOME + INCIDENT_TABLE)
     incident_seq_file.process()
 
-    cpe_compiled_files = Cpe_compiled_files(CSV_HOME + CPE_COMPILED_FILES_TABLE)
+    cpe_compiled_files = Cpe_compiled_files(REF_HOME + CPE_COMPILED_FILES_TABLE)
     cpe_compiled_files.process()
 
-    cve_ignore_file = Cve_ignore_file(CSV_HOME + CVE_IGNORE)
+    cve_ignore_file = Cve_ignore_file(REF_HOME + CVE_IGNORE)
     cve_ignore_file.process()
 
     load_cves()
@@ -389,7 +390,7 @@ def is_reference_relevant(cve_id, cpe, version, product_id):
 #                         }
 #  }
 
-incident_file = csv.CSV_FILE(CSV_HOME + INCIDENT_TABLE)
+incident_file = csv.CSV_FILE(OUTPUT_HOME + INCIDENT_TABLE)
 incident_seq = 0
 product_db = {}
 cpe_db = {}
