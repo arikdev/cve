@@ -5,6 +5,9 @@ if len(sys.argv) < 3:
     print('usage: %s incident_report vulgate_report' % sys.argv[0])
     sys.exit()
 
+CSV_HOME = '/home/manage/splunk/etc/apps/lookup_editor/lookups/'
+CVE_IGNORE = 'vul_cve_ignore.csv'
+
 vulgate = {}
 vulgate['reported'] = []
 vulgate['ignored'] = []
@@ -63,11 +66,25 @@ with open(sys.argv[1], 'r') as incidents_file:
             falsePositive += 1
             continue
 
+log_lines = [line.strip() for line in open('create_incidents_log.txt', 'r')]
+ignore_lines = [line.strip() for line in open(CSV_HOME + CVE_IGNORE, 'r')]
+
+print('\nNot reported :')
 print('----------------------------------------------')
 for vul in vulgate['reported']:
     if vul not in my_cves:
-        print(vul + ' Not reported')
+        for line in log_lines:
+            if vul in line:
+                print(line)
+                break
+        else:
+            for line in ignore_lines:
+                if vul in line:
+                    print(vul + ' in ignore file')
+                    break
+            else:
+                print(vul + ' Not reported')
         falseNegative += 1
 
-print('====================  SUMMARY ============================================================')
+print('\n====================  SUMMARY ============================================================')
 print('OK: ' + str(ok) + ' FALSENEGATIVE: ' + str(falseNegative) + ' FALSEPOSITIVE: ' + str(falsePositive))

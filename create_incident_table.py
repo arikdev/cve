@@ -345,6 +345,7 @@ def insert_incident(incidents_file, incidents, product_id, customer_id, cve, cpe
 def is_reference_relevant(cve_id, cpe, version, product_id):
     global cpe_compiled_files_db
     global ref_db
+    global log_f
 
     if cve_id not in ref_db:
         return True
@@ -365,6 +366,7 @@ def is_reference_relevant(cve_id, cpe, version, product_id):
 
     for c in ref_db[cve_id]['commits']:
         if c in commits_db:
+            log_f.write(cve_id + ' not relevat, commit:' + c + '\n')
             return False
 
     for pfile in cpe_entry['files']:
@@ -372,6 +374,7 @@ def is_reference_relevant(cve_id, cpe, version, product_id):
             if pfile in rfile:
                 return True
 
+    log_f.write(cve_id + ' not relevat, files\n')
     return False
 
 #############################################################################
@@ -407,6 +410,8 @@ incidents = incident_file.to_dic();
 
 if debug:
     print(incidents)
+
+log_f = open("create_incidents_log.txt", "w")
 
 with concurrent.futures.ThreadPoolExecutor() as executor:
     exec_results = executor.map(handle_product, product_db.items())
