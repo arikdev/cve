@@ -4,7 +4,7 @@ import json
 import csv_tools as csv
 from time import time
 
-CSV_HOME = '/home/manage/splunk/etc/apps/lookup_editor/lookups/'
+REF_HOME = '/home/manage/cve/reference/'
 CPE_TABLE = 'vul_cpe.csv'
 PRODUCT_CPE_TABLE = 'vul_product_cpe.csv'
 
@@ -80,10 +80,10 @@ now = datetime.now()
 current_time = now.strftime("%H:%M:%S")
 f.write('------------------Started---------------:' + current_time + '\n')
 
-cpe_file = Cpe_file(CSV_HOME + CPE_TABLE)
+cpe_file = Cpe_file(REF_HOME + CPE_TABLE)
 cpe_file.process()
 
-product_cpe_file = Product_cpe_file(CSV_HOME + PRODUCT_CPE_TABLE)
+product_cpe_file = Product_cpe_file(REF_HOME + PRODUCT_CPE_TABLE)
 product_cpe_file.process()
 
 now = datetime.now()
