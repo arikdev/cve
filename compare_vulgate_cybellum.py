@@ -5,9 +5,6 @@ if len(sys.argv) < 3:
     print('usage: %s incident_report vulgate_report' % sys.argv[0])
     sys.exit()
 
-CSV_HOME = '/home/manage/splunk/etc/apps/lookup_editor/lookups/'
-CVE_IGNORE = 'vul_cve_ignore.csv'
-
 vulgate = {}
 vulgate['reported'] = []
 vulgate['ignored'] = []
@@ -35,56 +32,41 @@ for vul in vuls:
         cve_id = i['cveId']
         vulgate['falsePositive'][cve_id] =  i['justificationForFalsePositive']
 
-ok = 0
-ignore = 0
+cyb_cves = []
+
 falsePositive = 0
+userIgnored = 0
 falseNegative = 0
-missing = 0
-
-
-my_cves = []
-
-with open(sys.argv[1], 'r') as incidents_file:
+ok = 0
+with open(sys.argv[1], 'r') as cyb_file:
     first = True
-    for line in incidents_file:
+    for line in cyb_file:
         if first:
             first = False
-            continue
+            #continue
+        line = line[:-1]
         tokens = line.split(',')
         cve = tokens[1]
-        my_cves.append(cve)
+        cyb_cves.append(cve)
         if cve in vulgate['reported']:
             print(cve + ' OK')
             ok += 1
             continue
         if cve in vulgate['ignored']:
-            print(cve + ' IGNORE')
-            ignore = 1
+            print(cve + ' IGNORE by user')
+            userIgnored += 1
             continue
         if cve in vulgate['falsePositive']:
             print(cve + ' FALSE POSITIVE ' +  vulgate['falsePositive'][cve]  )
             falsePositive += 1
             continue
 
-log_lines = [line.strip() for line in open('create_incidents_log.txt', 'r')]
-ignore_lines = [line.strip() for line in open(CSV_HOME + CVE_IGNORE, 'r')]
-
 print('\nNot reported :')
 print('----------------------------------------------')
 for vul in vulgate['reported']:
-    if vul not in my_cves:
-        for line in log_lines:
-            if vul in line:
-                print(line)
-                break
-        else:
-            for line in ignore_lines:
-                if vul in line:
-                    print(vul + ' in ignore file')
-                    break
-            else:
-                print(vul + ' Not reported')
+    if vul not in cyb_cves:
+        print(vul + ' Not reported')
         falseNegative += 1
 
 print('\n====================  SUMMARY ============================================================')
-print('OK: ' + str(ok) + ' FALSENEGATIVE: ' + str(falseNegative) + ' FALSEPOSITIVE: ' + str(falsePositive))
+print('OK: ' + str(ok) + ' FALSENEGATIVE: ' + str(falseNegative) + ' FALSEPOSITIVE: ' + str(falsePositive) + ' USER IGNORED: ' + str(userIgnored))
