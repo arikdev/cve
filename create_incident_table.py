@@ -413,6 +413,7 @@ if debug:
     print(incidents)
 
 log_f = open("create_incidents_log.txt", "w")
+rej_f = open("cve_rejected.txt", "w")
 
 with concurrent.futures.ThreadPoolExecutor() as executor:
     exec_results = executor.map(handle_product, product_db.items())
@@ -422,3 +423,6 @@ if debug:
     print(incidents)
 
 incident_file.from_dic(incidents)
+
+log_f.close()
+rej_f.close()
