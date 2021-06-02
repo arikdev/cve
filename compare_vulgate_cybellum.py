@@ -1,5 +1,6 @@
 import json
 import sys
+import pandas as pd
 
 if len(sys.argv) < 3:
     print('usage: %s incident_report vulgate_report' % sys.argv[0])
@@ -32,36 +33,38 @@ for vul in vuls:
         cve_id = i['cveId']
         vulgate['falsePositive'][cve_id] =  i['justificationForFalsePositive']
 
-cyb_cves = []
+df = pd.read_excel(sys.argv[1])
+cves_df = df.loc[(df['Status'] == 'new') & (df['Package'] == 'linux_kernel')]['Name']
+cyb_cves = cves_df.tolist()
 
 falsePositive = 0
 userIgnored = 0
 falseNegative = 0
 ok = 0
-with open(sys.argv[1], 'r') as cyb_file:
-    first = True
-    for line in cyb_file:
-        if first:
-            first = False
-            #continue
-        line = line[:-1]
-        tokens = line.split(',')
-        cve = tokens[1]
-        cyb_cves.append(cve)
-        if cve in vulgate['reported']:
-            print(cve + ' OK')
-            ok += 1
-            continue
-        if cve in vulgate['ignored']:
-            print(cve + ' IGNORE by user')
-            userIgnored += 1
-            continue
-        if cve in vulgate['falsePositive']:
-            print(cve + ' FALSE POSITIVE ' +  vulgate['falsePositive'][cve]  )
-            falsePositive += 1
-            continue
 
-print('\nNot reported :')
+cves_not_in_vulgate = []
+
+for cve in cyb_cves:
+    if cve in vulgate['reported']:
+        print(cve + ' OK')
+        ok += 1
+        continue
+    if cve in vulgate['ignored']:
+        print(cve + ' IGNORE by user')
+        userIgnored += 1
+        continue
+    if cve in vulgate['falsePositive']:
+        print(cve + ' FALSE POSITIVE ' +  vulgate['falsePositive'][cve]  )
+        falsePositive += 1
+        continue
+    cves_not_in_vulgate.append(cve)
+
+print('\nCVES reported and not found Vulgate:')
+print('----------------------------------------------')
+for cve in cves_not_in_vulgate:
+    print(cve)
+
+print('\nNot reported by Cybelum :')
 print('----------------------------------------------')
 for vul in vulgate['reported']:
     if vul not in cyb_cves:
