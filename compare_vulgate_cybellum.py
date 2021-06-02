@@ -44,22 +44,55 @@ ok = 0
 
 cves_not_in_vulgate = []
 
+FP_NC_list = []
+FP_list = []
+I_list = []
+OK_list = []
+
 for cve in cyb_cves:
     if cve in vulgate['reported']:
-        print(cve + ' OK')
+        OK_list.append(cve)
         ok += 1
         continue
     if cve in vulgate['ignored']:
-        print(cve + ' IGNORE by user')
+        I_list.append(cve)
         userIgnored += 1
         continue
     if cve in vulgate['falsePositive']:
-        print(cve + ' FALSE POSITIVE ' +  vulgate['falsePositive'][cve]  )
         falsePositive += 1
+        if 'not compiled' in vulgate['falsePositive'][cve]:
+            FP_NC_list.append(cve + ' FALSE POSITIVE ' +  vulgate['falsePositive'][cve])
+        else:
+            FP_list.append(cve + ' FALSE POSITIVE ' +  vulgate['falsePositive'][cve])
         continue
     cves_not_in_vulgate.append(cve)
 
-print('\nCVES reported and not found Vulgate:')
+print("Cybellum Vulgate report")
+print("-----------------------------------------------")
+
+print('Cybellun file:' + sys.argv[1] + '\nVulgate file:' + sys.argv[2])
+
+print('\nCVEs OK(' + str(len(OK_list)) + '):')
+print('---------------------------')
+for i in OK_list:
+    print(i)
+
+print('\nFalse positive NOT compiled(' + str(len(FP_NC_list)) + '):')
+print('---------------------------')
+for i in FP_NC_list:
+    print(i)
+
+print('\nFalse positive compiled(' + str(len(FP_list)) + '):')
+print('---------------------------')
+for i in FP_list:
+    print(i)
+
+print('\nUser Ignored(' + str(len(I_list)) + '):')
+print('---------------------------')
+for i in I_list:
+    print(i)
+
+print('\nCVES reported and not found in Vulgate:')
 print('----------------------------------------------')
 for cve in cves_not_in_vulgate:
     print(cve)
