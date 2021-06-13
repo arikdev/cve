@@ -33,7 +33,7 @@ for vul in vuls:
         cve_id = i['cveId']
         vulgate['falsePositive'][cve_id] =  i['justificationForFalsePositive']
 
-df = pd.read_excel(sys.argv[1])
+df = pd.read_excel(sys.argv[1], 'Known Vulnerabilities')
 cves_df = df.loc[(df['Status'] == 'new') & (df['Package'] == 'linux_kernel')]['Name']
 cyb_cves = cves_df.tolist()
 
@@ -70,7 +70,7 @@ for cve in cyb_cves:
 print("Cybellum Vulgate report")
 print("-----------------------------------------------")
 
-print('Cybellun file:' + sys.argv[1] + '\nVulgate file:' + sys.argv[2])
+print('Cybellum file:' + sys.argv[1] + '\nVulgate file:' + sys.argv[2])
 
 print('\nCVEs OK(' + str(len(OK_list)) + '):')
 print('---------------------------')
