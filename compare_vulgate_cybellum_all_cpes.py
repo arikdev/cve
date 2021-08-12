@@ -74,7 +74,7 @@ for cve in report_fs_not_compiled:
 print('\nFalse positive not in Vulgate (' + str(len(report_not_in_vulgate)) + ') :')
 print('---------------------------------------')
 for cve in report_not_in_vulgate:
-    print(cve, cybelum[cve])
+    print('NV' + ',' + cve + ',' +  cybelum[cve])
      
 print('\nFalse positive compiled (' + str(len(report_fs_compiled)) + ') :')
 print('---------------------------------------')
